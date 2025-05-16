@@ -1,9 +1,14 @@
-import 'package:ensala_pro/principal.dart';
+import 'package:ensala_pro/professorpage.dart';
+import 'package:ensala_pro/alunopage.dart';
+import 'package:ensala_pro/secretariapage.dart';
+import 'package:ensala_pro/infrapage.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 //usuario:email user@user.com
 //senha: 12345
+// usuario: professor@user.com
+// senha: 123
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -53,17 +58,32 @@ class _LoginPageState extends State<LoginPage> {
           context,
           MaterialPageRoute(builder: (_) => const AlunoPage()),
         );
-      } else if (cargo == 'professor') {
+      } 
+      else if (cargo == 'professor') {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const ProfessorPage()),
         );
-      } else {
+      }
+      else if (cargo == 'secretaria') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const SecretariaPage()),
+        );
+      } 
+      else if (cargo == 'infraestrutura') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const Infrapage()),
+        );
+      }  
+      else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Cargo indefinido para este usuário.')),
         );
       }
-    } catch (e) {
+    } 
+    catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro: ${e.toString()}')),
