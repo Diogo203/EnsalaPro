@@ -112,7 +112,7 @@ Widget build(BuildContext context) {
             return Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: isWide ? 400 : double.infinity,
+                  maxWidth: isWide ? 600 : double.infinity,
                 ),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -139,7 +139,7 @@ Widget build(BuildContext context) {
                           child: Image.asset(
                             'assets/logo.png',
                             width: isWide
-                                ? 200
+                                ? 270
                                 : MediaQuery.of(context).size.width * 0.5,
                             fit: BoxFit.contain,
                           ),
@@ -188,10 +188,6 @@ Widget build(BuildContext context) {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        TextButton(
-                          onPressed: () {},
-                          child: const Text('Esqueci minha senha'),
-                        ),
                       ],
                     ),
                   ),
