@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ensala_pro/login.dart';
 
+final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
 class SecretariaPage extends StatefulWidget {
   const SecretariaPage({super.key});
 
@@ -55,7 +57,7 @@ class _SecretariaPageState extends State<SecretariaPage> {
     bool caixaSom = false;
 
     showDialog(
-      context: context,
+      context: _scaffoldKey.currentContext!,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -147,7 +149,7 @@ class _SecretariaPageState extends State<SecretariaPage> {
 
   void _abrirModalUsuarios(BuildContext context) {
     showDialog(
-      context: context,
+      context: _scaffoldKey.currentContext!,
       builder: (context) => AlertDialog(
         title: const Text('Usuários'),
         content: SizedBox(
@@ -168,7 +170,7 @@ class _SecretariaPageState extends State<SecretariaPage> {
                 label: 'Listar Usuários',
                 onTap: () {
                   Navigator.of(context).pop();
-                  _abrirListagemUsuariosModal(context);
+                  _abrirListagemUsuariosModal(_scaffoldKey.currentContext!);
                 },
               ),
             ],
@@ -186,7 +188,7 @@ class _SecretariaPageState extends State<SecretariaPage> {
   final TextEditingController senhaController = TextEditingController();
 
   showDialog(
-    context: context,
+    context: _scaffoldKey.currentContext!,
     builder: (context) => AlertDialog(
       title: const Text('Cadastro de Usuário'),
       content: Form(
@@ -283,114 +285,220 @@ class _SecretariaPageState extends State<SecretariaPage> {
 
 
 void _abrirListagemUsuariosModal(BuildContext context) async {
-  // Mostra loading enquanto busca os dados
+  // Loading inicial
   showDialog(
-    context: context,
+    context: _scaffoldKey.currentContext!,
     barrierDismissible: false,
     builder: (context) => const Center(child: CircularProgressIndicator()),
   );
 
   try {
-    final List usuarios =
-        await supabase.from('usuarios').select();
+    // Buscar dados da view usuario_com_email
+    final List usuariosOriginais = await supabase
+        .from('usuario_com_email')
+        .select('id, nome, cargo, user_id, email');
 
-    // Fecha o dialog de loading
-    Navigator.pop(context);
+    Navigator.pop(context); // Fecha o loading
 
-    if (usuarios.isEmpty) {
+    if (usuariosOriginais.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Nenhum usuário encontrado.')),
       );
       return;
     }
 
-    final Map<String, TextEditingController> nomeControllers = {
-      for (var u in usuarios)
-        u['id']: TextEditingController(text: u['nome'] ?? '')
-    };
+    // Controllers para edição
+    Map<String, Map<String, TextEditingController>> controllers = {};
+    for (var u in usuariosOriginais) {
+      final id = u['id'].toString();
+      controllers[id] = {
+        'nome': TextEditingController(text: u['nome'] ?? ''),
+        'cargo': TextEditingController(text: u['cargo'] ?? ''),
+      };
+    }
+
+    List usuariosFiltrados = List.from(usuariosOriginais);
+    String filtroCargo = 'Todos';
+    String pesquisaNome = '';
 
     showDialog(
-      context: context,
+      context: _scaffoldKey.currentContext!,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            void aplicarFiltro() {
+              setState(() {
+                usuariosFiltrados = usuariosOriginais.where((usuario) {
+                  final nome = (usuario['nome'] ?? '').toString().toLowerCase();
+                  final cargo = (usuario['cargo'] ?? '').toString();
+
+                  final correspondeNome = nome.contains(pesquisaNome.toLowerCase());
+                  final correspondeCargo = filtroCargo == 'Todos' || cargo == filtroCargo;
+
+                  return correspondeNome && correspondeCargo;
+                }).toList();
+              });
+            }
+
             return AlertDialog(
               title: const Text('Listar Usuários'),
               content: SizedBox(
-                width: 300,
-                height: 400,
-                child: ListView.builder(
-                  itemCount: usuarios.length,
-                  itemBuilder: (context, index) {
-                    final usuario = usuarios[index];
-                    final String id = usuario['id'];
-                    final nomeController = nomeControllers[id]!;
-
-                    final String cargo =
-                        (usuario['cargo'] ?? 'Sem cargo').toString();
-
-                    return Card(
-                      elevation: 2,
-                      margin:
-                          const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                      child: ListTile(
-                        title: TextField(
-                          controller: nomeController,
-                          decoration: const InputDecoration(
-                            hintText: 'Nome',
-                            border: InputBorder.none,
+                width: MediaQuery.of(context).size.width * 0.8,
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: Column(
+                  children: [
+                    // 🔎 Filtros
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            decoration: const InputDecoration(
+                              labelText: 'Pesquisar por nome',
+                              prefixIcon: Icon(Icons.search),
+                            ),
+                            onChanged: (value) {
+                              pesquisaNome = value;
+                              aplicarFiltro();
+                            },
                           ),
                         ),
-                        subtitle: Text('Cargo: $cargo'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.save, color: Colors.blue),
-                              onPressed: () async {
-                                await supabase
-                                    .from('usuarios')
-                                    .update({
-                                      'nome': nomeController.text,
-                                    })
-                                    .eq('id', id);
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Usuário atualizado')),
-                                );
-
-                                setState(() {
-                                  usuario['nome'] = nomeController.text;
-                                });
-                              },
-                            ),
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await supabase
-                                    .from('usuarios')
-                                    .delete()
-                                    .eq('id', id);
-
-                                setState(() {
-                                  usuarios.removeAt(index);
-                                  nomeControllers.remove(id);
-                                });
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Usuário deletado')),
-                                );
-                              },
-                            ),
-                          ],
+                        const SizedBox(width: 10),
+                        DropdownButton<String>(
+                          value: filtroCargo,
+                          items: <String>[
+                            'Todos',
+                            ...{
+                              ...usuariosOriginais
+                                  .map((e) => e['cargo'] ?? 'Sem cargo')
+                            }
+                          ].map((cargo) {
+                            return DropdownMenuItem(
+                              value: cargo,
+                              child: Text(cargo),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            filtroCargo = value!;
+                            aplicarFiltro();
+                          },
                         ),
-                      ),
-                    );
-                  },
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    // 🗒 Lista
+                    Expanded(
+                      child: usuariosFiltrados.isEmpty
+                          ? const Center(child: Text('Nenhum usuário encontrado.'))
+                          : ListView.builder(
+                              itemCount: usuariosFiltrados.length,
+                              itemBuilder: (context, index) {
+                                final usuario = usuariosFiltrados[index];
+                                final id = usuario['id'].toString();
+
+                                final nomeController = controllers[id]!['nome']!;
+                                final cargoController = controllers[id]!['cargo']!;
+
+                                return Card(
+                                  elevation: 3,
+                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: TextField(
+                                                controller: nomeController,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Nome',
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: TextField(
+                                                controller: cargoController,
+                                                decoration: const InputDecoration(
+                                                  labelText: 'Cargo',
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Email: ${usuario['email'] ?? 'Não encontrado'}',
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.save,
+                                                  color: Colors.blue),
+                                              onPressed: () async {
+                                                await supabase
+                                                    .from('usuarios')
+                                                    .update({
+                                                      'nome': nomeController.text,
+                                                      'cargo': cargoController.text,
+                                                    })
+                                                    .eq('id', id);
+
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content: Text(
+                                                          'Usuário atualizado')),
+                                                );
+
+                                                setState(() {
+                                                  usuario['nome'] =
+                                                      nomeController.text;
+                                                  usuario['cargo'] =
+                                                      cargoController.text;
+                                                });
+                                              },
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete,
+                                                  color: Colors.red),
+                                              onPressed: () async {
+                                                await supabase
+                                                    .from('usuarios')
+                                                    .delete()
+                                                    .eq('id', id);
+
+                                                setState(() {
+                                                  usuariosOriginais.removeWhere(
+                                                      (u) => u['id'] == id);
+                                                  usuariosFiltrados
+                                                      .removeAt(index);
+                                                  controllers.remove(id);
+                                                });
+
+                                                ScaffoldMessenger.of(context)
+                                                    .showSnackBar(
+                                                  const SnackBar(
+                                                      content:
+                                                          Text('Usuário deletado')),
+                                                );
+                                              },
+                                            ),
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
               ),
               actions: [
@@ -411,142 +519,12 @@ void _abrirListagemUsuariosModal(BuildContext context) async {
     );
   }
 }
-void abrirListagemUsuariosModal(BuildContext context) async {
-  // Mostra loading enquanto busca os dados
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) => const Center(child: CircularProgressIndicator()),
-  );
-
-  try {
-    final List usuarios =
-        await supabase.from('usuarios').select();
-
-    // Fecha o dialog de loading
-    Navigator.pop(context);
-
-    if (usuarios.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Nenhum usuário encontrado.')),
-      );
-      return;
-    }
-
-    final Map<String, TextEditingController> nomeControllers = {
-      for (var u in usuarios)
-        u['id']: TextEditingController(text: u['nome'] ?? '')
-    };
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Listar Usuários'),
-              content: SizedBox(
-                width: 300,
-                height: 400,
-                child: ListView.builder(
-                  itemCount: usuarios.length,
-                  itemBuilder: (context, index) {
-                    final usuario = usuarios[index];
-                    final String id = usuario['id'];
-                    final nomeController = nomeControllers[id]!;
-
-                    final String cargo =
-                        (usuario['cargo'] ?? 'Sem cargo').toString();
-
-                    return Card(
-                      elevation: 2,
-                      margin:
-                          const EdgeInsets.symmetric(vertical: 4, horizontal: 0),
-                      child: ListTile(
-                        title: TextField(
-                          controller: nomeController,
-                          decoration: const InputDecoration(
-                            hintText: 'Nome',
-                            border: InputBorder.none,
-                          ),
-                        ),
-                        subtitle: Text('Cargo: $cargo'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.save, color: Colors.blue),
-                              onPressed: () async {
-                                await supabase
-                                    .from('usuarios')
-                                    .update({
-                                      'nome': nomeController.text,
-                                    })
-                                    .eq('id', id);
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Usuário atualizado')),
-                                );
-
-                                setState(() {
-                                  usuario['nome'] = nomeController.text;
-                                });
-                              },
-                            ),
-                            IconButton(
-                              icon:
-                                  const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                await supabase
-                                    .from('usuarios')
-                                    .delete()
-                                    .eq('id', id);
-
-                                setState(() {
-                                  usuarios.removeAt(index);
-                                  nomeControllers.remove(id);
-                                });
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Usuário deletado')),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Fechar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  } catch (e) {
-    Navigator.pop(context); // Fecha o loading
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Erro ao carregar usuários: $e')),
-    );
-  }
-}
-
-
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         title: const Text('Página da Secretaria'),
         actions: [
