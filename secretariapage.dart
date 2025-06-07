@@ -173,6 +173,22 @@ class _SecretariaPageState extends State<SecretariaPage> {
                   _abrirListagemUsuariosModal(_scaffoldKey.currentContext!);
                 },
               ),
+              _buildMenuCard(
+                icon: Icons.people,
+                label: 'CRUD Curso',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _abrirCrudCursoModal(_scaffoldKey.currentContext!);
+                },
+              ),
+              _buildMenuCard(
+                icon: Icons.people,
+                label: 'Cadastro Curso',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _abrirCadastroCursoModal(_scaffoldKey.currentContext!);
+                },
+              ),
             ],
           ),
         ),
@@ -518,6 +534,103 @@ void _abrirListagemUsuariosModal(BuildContext context) async {
       SnackBar(content: Text('Erro ao carregar usuários: $e')),
     );
   }
+}
+
+void _abrirCadastroCursoModal(BuildContext context) {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController cursoController = TextEditingController();
+  final TextEditingController semestreController = TextEditingController();
+  final TextEditingController periodoController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Cadastrar Curso'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: cursoController,
+                decoration: const InputDecoration(labelText: 'Curso'),
+                validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+              TextFormField(
+                controller: semestreController,
+                decoration: const InputDecoration(labelText: 'Semestre'),
+                validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+              TextFormField(
+                controller: periodoController,
+                decoration: const InputDecoration(labelText: 'Período'),
+                validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (_formKey.currentState!.validate()) {
+              final data = {
+                'curso': cursoController.text,
+                'semestre': semestreController.text,
+                'periodo': periodoController.text,
+              };
+
+              await supabase.from('curso').insert(data);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Curso cadastrado com sucesso!')),
+              );
+
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Salvar'),
+        ),
+      ],
+    ),
+  );
+}
+
+
+void _abrirCrudCursoModal(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Cursos'),
+      content: SizedBox(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _abrirCrudCursoModal(context);
+              },
+              child: const Text('Cadastrar Curso'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _abrirCadastroCursoModal(context);
+              },
+              child: const Text('Listar Cursos'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 
