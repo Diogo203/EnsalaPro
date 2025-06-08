@@ -172,7 +172,7 @@ class _InfrapageState extends State<Infrapage> {
                       }).eq('id', sala['id']);
 
                       Navigator.of(context).pop();
-                      _abrirModalManutencao(); // atualiza lista
+                      _abrirModalManutencao();
                     }
                   },
                   child: const Text('Salvar'),
@@ -405,7 +405,7 @@ class _InfrapageState extends State<Infrapage> {
                   context: context,
                   applicationName: 'Sistema de Infraestrutura',
                   applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2025 Sua Empresa',
+                  applicationLegalese: '© 2025 Diogo e Rafael',
                 );
               },
             ),
