@@ -147,6 +147,247 @@ class _SecretariaPageState extends State<SecretariaPage> {
     );
   }
 
+void _abrirFormularioEnsalamentoModal(
+  BuildContext context, {
+  required List<dynamic> cursos,
+  required List<dynamic> salas,
+  Map<String, dynamic>? ensalamentoParaEditar,
+  required VoidCallback onAtualizado,
+}) {
+  final _formKey = GlobalKey<FormState>();
+
+  String? salaIdSelecionada = ensalamentoParaEditar?['sala_id']?.toString();
+  String? diaSemanaSelecionado = ensalamentoParaEditar?['dia_semana'];
+  String? cursoPrimeiroHorarioId = ensalamentoParaEditar?['primeiro_horario']?.toString();
+  String? cursoSegundoHorarioId = ensalamentoParaEditar?['segundo_horario']?.toString();
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text(ensalamentoParaEditar == null ? 'Adicionar Ensalamento' : 'Editar Ensalamento'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: salaIdSelecionada,
+                      decoration: const InputDecoration(labelText: 'Sala'),
+                      items: salas.map<DropdownMenuItem<String>>((sala) {
+                        return DropdownMenuItem<String>(
+                          value: sala['id'].toString(),
+                          child: Text('Bloco ${sala['bloco']} - Sala ${sala['sala']}'),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => salaIdSelecionada = val),
+                      validator: (v) => v == null ? 'Selecione uma sala' : null,
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: diaSemanaSelecionado,
+                      decoration: const InputDecoration(labelText: 'Dia da Semana'),
+                      items: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta']
+                          .map((dia) => DropdownMenuItem(value: dia, child: Text(dia)))
+                          .toList(),
+                      onChanged: (val) => setState(() => diaSemanaSelecionado = val),
+                      validator: (v) => v == null ? 'Selecione o dia da semana' : null,
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: cursoPrimeiroHorarioId,
+                      decoration: const InputDecoration(labelText: 'Curso - Primeiro Horário'),
+                      items: cursos.map<DropdownMenuItem<String>>((curso) {
+                        return DropdownMenuItem<String>(
+                          value: curso['id'].toString(),
+                          child: Text('${curso['semestre']}º - ${curso['curso']} (${curso['periodo']})'),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => cursoPrimeiroHorarioId = val),
+                      validator: (v) => v == null ? 'Selecione o curso para o primeiro horário' : null,
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: cursoSegundoHorarioId,
+                      decoration: const InputDecoration(labelText: 'Curso - Segundo Horário'),
+                      items: cursos.map<DropdownMenuItem<String>>((curso) {
+                        return DropdownMenuItem<String>(
+                          value: curso['id'].toString(),
+                          child: Text('${curso['semestre']}º - ${curso['curso']} (${curso['periodo']})'),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => cursoSegundoHorarioId = val),
+                      validator: (v) => v == null ? 'Selecione o curso para o segundo horário' : null,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (!_formKey.currentState!.validate()) return;
+
+                  final data = {
+                    'sala_id': salaIdSelecionada,
+                    'dia_semana': diaSemanaSelecionado,
+                    'primeiro_horario': cursoPrimeiroHorarioId,
+                    'segundo_horario': cursoSegundoHorarioId,
+                  };
+
+                  try {
+                    // Verifica conflitos
+                    final query = Supabase.instance.client
+                        .from('ensalamento')
+                        .select()
+                        .eq('sala_id', salaIdSelecionada)
+                        .eq('dia_semana', diaSemanaSelecionado);
+
+                    if (ensalamentoParaEditar != null) {
+                      query.not('id', 'eq', ensalamentoParaEditar['id']);
+                    }
+
+                    final conflito = await query.execute();
+
+                    if (conflito.data != null && (conflito.data as List).isNotEmpty) {
+                      final conflitos = (conflito.data as List).where((item) {
+                        return item['primeiro_horario'] == cursoPrimeiroHorarioId ||
+                               item['segundo_horario'] == cursoSegundoHorarioId;
+                      });
+
+                      if (conflitos.isNotEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Conflito: Essa sala já está reservada para esse curso nesse horário.')),
+                        );
+                        return;
+                      }
+                    }
+
+                    // Inserção ou atualização
+                    if (ensalamentoParaEditar == null) {
+                      await Supabase.instance.client.from('ensalamento').insert(data);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Ensalamento adicionado com sucesso!')),
+                      );
+                    } else {
+                      await Supabase.instance.client
+                          .from('ensalamento')
+                          .update(data)
+                          .eq('id', ensalamentoParaEditar['id']);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Ensalamento atualizado com sucesso!')),
+                      );
+                    }
+
+                    onAtualizado();
+                    Navigator.of(context).pop();
+                  } catch (e) {
+                    print('Erro ao salvar ensalamento: $e');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erro ao salvar: $e')),
+                    );
+                  }
+                },
+                child: Text(ensalamentoParaEditar == null ? 'Salvar' : 'Atualizar'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+void _abrirGerenciamentoEnsalamento(BuildContext context) async {
+  final cursos = await supabase.from('curso').select().execute().then((res) => res.data as List);
+  final salas = await supabase.from('sala').select().execute().then((res) => res.data as List);
+  final ensalamentos = await supabase.from('ensalamento').select().execute().then((res) => res.data as List);
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          Future<void> _carregarEnsalamentos() async {
+            final atualizados = await supabase.from('ensalamento').select().execute();
+            setState(() => ensalamentos.clear());
+            ensalamentos.addAll(atualizados.data);
+          }
+
+          Future<void> _excluir(Map<String, dynamic> item) async {
+            await supabase.from('ensalamento').delete().eq('id', item['id']);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removido com sucesso')));
+            await _carregarEnsalamentos();
+          }
+
+          return AlertDialog(
+            title: const Text('Gerenciar Ensalamentos'),
+            content: SizedBox(
+              width: 500,
+              height: 400,
+              child: ListView.builder(
+                itemCount: ensalamentos.length,
+                itemBuilder: (context, index) {
+                  final e = ensalamentos[index];
+                  final sala = salas.firstWhere((s) => s['id'] == e['sala_id']);
+                  final curso1 = cursos.firstWhere((c) => c['id'] == e['primeiro_horario']);
+                  final curso2 = cursos.firstWhere((c) => c['id'] == e['segundo_horario']);
+
+                  return Card(
+                    child: ListTile(
+                      title: Text(
+                        '${e['dia_semana']} - Sala ${sala['sala']} (${sala['bloco']})',
+                      ),
+                      subtitle: Text(
+                        '1º: ${curso1['semestre']} - ${curso1['curso']} (${curso1['periodo']})\n'
+                        '2º: ${curso2['semestre']} - ${curso2['curso']} (${curso2['periodo']})',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              _abrirFormularioEnsalamentoModal(
+                                context,
+                                cursos: cursos,
+                                salas: salas,
+                                ensalamentoParaEditar: e,
+                                onAtualizado: () {
+                                  _abrirGerenciamentoEnsalamento(context);
+                                },
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _excluir(e),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Fechar'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
   void _abrirModalUsuarios(BuildContext context) {
     showDialog(
       context: _scaffoldKey.currentContext!,
@@ -171,6 +412,22 @@ class _SecretariaPageState extends State<SecretariaPage> {
                 onTap: () {
                   Navigator.of(context).pop();
                   _abrirListagemUsuariosModal(_scaffoldKey.currentContext!);
+                },
+              ),
+              _buildMenuCard(
+                icon: Icons.people,
+                label: 'CRUD Curso',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _abrirCrudCursoModal(_scaffoldKey.currentContext!);
+                },
+              ),
+              _buildMenuCard(
+                icon: Icons.people,
+                label: 'Cadastro Curso',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _abrirCadastroCursoModal(_scaffoldKey.currentContext!);
                 },
               ),
             ],
@@ -249,7 +506,7 @@ class _SecretariaPageState extends State<SecretariaPage> {
                 final user = response.user;
 
                 if (user != null) {
-                  // Insere na tabela 'usuarios' com user_id do supabase
+                  
                   await supabase.from('usuarios').insert({
                     'user_id': user.id,
                     'nome': nomeController.text.trim(),
@@ -260,7 +517,7 @@ class _SecretariaPageState extends State<SecretariaPage> {
                     const SnackBar(content: Text('Usuário cadastrado com sucesso')),
                   );
 
-                  // Opcional: desloga o usuário criado para manter a sessão atual
+                  
                   await supabase.auth.signOut();
 
                   Navigator.pop(context);
@@ -520,6 +777,103 @@ void _abrirListagemUsuariosModal(BuildContext context) async {
   }
 }
 
+void _abrirCadastroCursoModal(BuildContext context) {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController cursoController = TextEditingController();
+  final TextEditingController semestreController = TextEditingController();
+  final TextEditingController periodoController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Cadastrar Curso'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: cursoController,
+                decoration: const InputDecoration(labelText: 'Curso'),
+                validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+              TextFormField(
+                controller: semestreController,
+                decoration: const InputDecoration(labelText: 'Semestre'),
+                validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+              TextFormField(
+                controller: periodoController,
+                decoration: const InputDecoration(labelText: 'Período'),
+                validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (_formKey.currentState!.validate()) {
+              final data = {
+                'curso': cursoController.text,
+                'semestre': semestreController.text,
+                'periodo': periodoController.text,
+              };
+
+              await supabase.from('curso').insert(data);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Curso cadastrado com sucesso!')),
+              );
+
+              Navigator.of(context).pop();
+            }
+          },
+          child: const Text('Salvar'),
+        ),
+      ],
+    ),
+  );
+}
+
+
+void _abrirCrudCursoModal(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Cursos'),
+      content: SizedBox(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _abrirCrudCursoModal(context);
+              },
+              child: const Text('Cadastrar Curso'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _abrirCadastroCursoModal(context);
+              },
+              child: const Text('Listar Cursos'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -531,6 +885,7 @@ void _abrirListagemUsuariosModal(BuildContext context) async {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Deslogar',
+            hoverColor:const Color.fromARGB(255, 220, 28, 28),
             onPressed: () => _logout(context),
           ),
         ],
@@ -552,8 +907,28 @@ void _abrirListagemUsuariosModal(BuildContext context) async {
               label: 'Usuários',
               onTap: () => _abrirModalUsuarios(context),
             ),
+            _buildMenuCard(
+              icon: Icons.class_,
+              label: 'Ensalamento',
+              onTap: () async {
+                final cursos = await supabase.from('curso').select().execute().then((res) => res.data as List);
+                final salas = await supabase.from('sala').select().execute().then((res) => res.data as List);
+
+                _abrirFormularioEnsalamentoModal(
+                  context,
+                  cursos: cursos,
+                  salas: salas,
+                  onAtualizado: () => setState(() {}),
+                );
+              },
+            ),
+            _buildMenuCard(
+              icon: Icons.manage_search,
+              label: 'Gerenciar Ensalamento',
+              onTap: () => _abrirGerenciamentoEnsalamento(context),
+            ),
           ],
-        ),
+        )
       ),
     );
   }
