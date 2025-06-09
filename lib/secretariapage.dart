@@ -128,7 +128,7 @@ class _SecretariaPageState extends State<SecretariaPage> {
                         'caixa_som': caixaSom,
                       };
 
-                      await supabase.from('ensalamento').insert(data);
+                      await supabase.from('sala').insert(data);
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Sala cadastrada com sucesso!')),
@@ -412,22 +412,6 @@ void _abrirGerenciamentoEnsalamento(BuildContext context) async {
                 onTap: () {
                   Navigator.of(context).pop();
                   _abrirListagemUsuariosModal(_scaffoldKey.currentContext!);
-                },
-              ),
-              _buildMenuCard(
-                icon: Icons.people,
-                label: 'CRUD Curso',
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _abrirCrudCursoModal(_scaffoldKey.currentContext!);
-                },
-              ),
-              _buildMenuCard(
-                icon: Icons.people,
-                label: 'Cadastro Curso',
-                onTap: () {
-                  Navigator.of(context).pop();
-                  _abrirCadastroCursoModal(_scaffoldKey.currentContext!);
                 },
               ),
             ],
@@ -781,7 +765,7 @@ void _abrirCadastroCursoModal(BuildContext context) {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController cursoController = TextEditingController();
   final TextEditingController semestreController = TextEditingController();
-  final TextEditingController periodoController = TextEditingController();
+  String? periodoSelecionado;
 
   showDialog(
     context: context,
@@ -803,10 +787,17 @@ void _abrirCadastroCursoModal(BuildContext context) {
                 decoration: const InputDecoration(labelText: 'Semestre'),
                 validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
               ),
-              TextFormField(
-                controller: periodoController,
+              DropdownButtonFormField<String>(
+                value: periodoSelecionado,
                 decoration: const InputDecoration(labelText: 'Período'),
-                validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
+                items: const [
+                  DropdownMenuItem(value: 'matutino', child: Text('Matutino')),
+                  DropdownMenuItem(value: 'noturno', child: Text('Noturno')),
+                ],
+                onChanged: (value) {
+                  periodoSelecionado = value;
+                },
+                validator: (value) => value == null ? 'Campo obrigatório' : null,
               ),
             ],
           ),
@@ -823,7 +814,7 @@ void _abrirCadastroCursoModal(BuildContext context) {
               final data = {
                 'curso': cursoController.text,
                 'semestre': semestreController.text,
-                'periodo': periodoController.text,
+                'periodo': periodoSelecionado,
               };
 
               await supabase.from('curso').insert(data);
@@ -843,6 +834,58 @@ void _abrirCadastroCursoModal(BuildContext context) {
 }
 
 
+void _listarCursosModal(BuildContext context) async {
+  final response = await supabase.from('curso').select();
+
+  if (response == null || response.isEmpty) {
+    // Exibe um aviso se não houver cursos
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cursos'),
+        content: const Text('Nenhum curso cadastrado.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fechar'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  // Exibe os cursos em uma lista
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Lista de Cursos'),
+      content: SizedBox(
+        width: 300,
+        height: 300,
+        child: ListView.builder(
+          itemCount: response.length,
+          itemBuilder: (context, index) {
+            final curso = response[index];
+            return ListTile(
+              title: Text(curso['curso'] ?? ''),
+              subtitle: Text(
+                'Semestre: ${curso['semestre'] ?? ''} | Período: ${curso['periodo'] ?? ''}',
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Fechar'),
+        ),
+      ],
+    ),
+  );
+}
+
 void _abrirCrudCursoModal(BuildContext context) {
   showDialog(
     context: context,
@@ -856,14 +899,14 @@ void _abrirCrudCursoModal(BuildContext context) {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _abrirCrudCursoModal(context);
+                _abrirCadastroCursoModal(context);
               },
               child: const Text('Cadastrar Curso'),
             ),
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _abrirCadastroCursoModal(context);
+                _listarCursosModal(context);
               },
               child: const Text('Listar Cursos'),
             ),
@@ -885,7 +928,6 @@ void _abrirCrudCursoModal(BuildContext context) {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Deslogar',
-            hoverColor:const Color.fromARGB(255, 220, 28, 28),
             onPressed: () => _logout(context),
           ),
         ],
@@ -899,13 +941,18 @@ void _abrirCrudCursoModal(BuildContext context) {
           children: [
             _buildMenuCard(
               icon: Icons.class_,
-              label: 'CRUD Sala',
+              label: 'Cadastro Sala',
               onTap: () => _abrirFormularioSalaModal(context),
             ),
             _buildMenuCard(
               icon: Icons.person,
               label: 'Usuários',
               onTap: () => _abrirModalUsuarios(context),
+            ),
+            _buildMenuCard(
+              icon: Icons.school,
+              label: 'Cursos',
+              onTap: () => _abrirCrudCursoModal(context),
             ),
             _buildMenuCard(
               icon: Icons.class_,
