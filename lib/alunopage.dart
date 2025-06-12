@@ -1,4 +1,6 @@
 // ... suas importações
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ensala_pro/login.dart';
@@ -178,15 +180,22 @@ class _AlunoPageState extends State<AlunoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Página do Aluno'),
+        backgroundColor: Colors.blueAccent,
+        title: const Text('Página do Aluno', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         leading: Builder(
           builder: (context) => IconButton(
+            style: IconButton.styleFrom(
+              foregroundColor: Colors.white, // Cor do ícone
+            ),
             icon: const Icon(Icons.menu),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
         actions: [
           IconButton(
+            style: IconButton.styleFrom(
+              foregroundColor: Colors.white, // Cor do ícone
+            ),
             icon: const Icon(Icons.logout),
             onPressed: () => _logout(context),
           ),
@@ -197,73 +206,104 @@ class _AlunoPageState extends State<AlunoPage> {
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
+              margin: EdgeInsets.zero,
+              decoration: BoxDecoration(color: Colors.blueAccent,
+               boxShadow: [
+                BoxShadow(
+                 color: Colors.grey,
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),	
               child: Text('Menu do Sistema', style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
             ListTile(
               leading: const Icon(Icons.schedule),
               title: const Text('Ver Horários'),
               onTap: () => Navigator.pop(context),
+            )
+          ],
+        ),
+      ),
+      body: Container(
+  color: const Color(0xFFabdbe3), // Fundo azul claro
+  child: Column(
+    children: [
+      Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              spreadRadius: 2,
+              blurRadius: 6,
+              offset: const Offset(0, 3),
             ),
-            ListTile(
-              leading: const Icon(Icons.room),
-              title: const Text('Salas Disponíveis'),
-              onTap: () {},
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Pesquisar...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                onChanged: (val) => setState(() => pesquisa = val),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.account_circle),
-              title: const Text('Perfil'),
-              onTap: () {},
+            const SizedBox(width: 10),
+            ElevatedButton.icon(
+              onPressed: _abrirFiltro,
+              icon: const Icon(Icons.filter_list),
+              label: const Text('Filtro'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: 'Pesquisar...',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (val) => setState(() => pesquisa = val),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  onPressed: _abrirFiltro,
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: ensalamentosFiltrados.length,
-              itemBuilder: (context, index) {
-                final e = ensalamentosFiltrados[index];
-                final sala = salas.firstWhere((s) => s['id'] == e['sala_id'], orElse: () => {'sala': 'Desconhecida', 'bloco': '-'});
-                final curso1 = cursos.firstWhere((c) => c['id'] == e['primeiro_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
-                final curso2 = cursos.firstWhere((c) => c['id'] == e['segundo_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
+      Expanded(
+        child: ListView.builder(
+          itemCount: ensalamentosFiltrados.length,
+          itemBuilder: (context, index) {
+            final e = ensalamentosFiltrados[index];
+            final sala = salas.firstWhere((s) => s['id'] == e['sala_id'], orElse: () => {'sala': 'Desconhecida', 'bloco': '-'});
+            final curso1 = cursos.firstWhere((c) => c['id'] == e['primeiro_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
+            final curso2 = cursos.firstWhere((c) => c['id'] == e['segundo_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
 
-                return Card(
-                  child: ListTile(
-                    title: Text('${e['dia_semana']} - Sala ${sala['sala']} / Bloco ${sala['bloco']}'),
-                    subtitle: Text(
-                      '1º: ${curso1['semestre']} - ${curso1['curso']} (${curso1['periodo']})\n'
-                      '2º: ${curso2['semestre']} - ${curso2['curso']} (${curso2['periodo']})',
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 3,
+              child: ListTile(
+                title: Text('${e['dia_semana']} - Sala ${sala['sala']} / Bloco ${sala['bloco']}'),
+                subtitle: Text(
+                  '1º: ${curso1['semestre']} - ${curso1['curso']} (${curso1['periodo']})\n'
+                  '2º: ${curso2['semestre']} - ${curso2['curso']} (${curso2['periodo']})',
+                ),
+              ),
+            );
+          },
+        ),
       ),
+    ],
+  ),
+),
+
     );
   }
 }

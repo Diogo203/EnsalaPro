@@ -173,55 +173,67 @@ class _ProfessorPageState extends State<ProfessorPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Página do Professor'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+ @override
+ Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: const Color(0xFFabdbe3),
+    appBar: AppBar(
+      backgroundColor: Colors.blueAccent,
+      title: const Text(
+        'Página do Professor',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Deslogar',
-            onPressed: () => _logout(context),
+      ),
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout, color: Colors.white),
+          tooltip: 'Deslogar',
+          onPressed: () => _logout(context),
+        ),
+      ],
+    ),
+    drawer: Drawer(
+      elevation: 8,
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          const DrawerHeader(
+            decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+            ),
+            child: Text(
+              'Menu do Professor',
+              style: TextStyle(color: Colors.white, fontSize: 24),
+            ),
           ),
+          ListTile(
+            leading: const Icon(Icons.schedule),
+            title: const Text('Ver Horários'),
+            onTap: () => Navigator.pop(context),
+          )
         ],
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text('Menu do Professor', style: TextStyle(color: Colors.white, fontSize: 24)),
+    ),
+    body: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
             ),
-            ListTile(
-              leading: const Icon(Icons.schedule),
-              title: const Text('Ver Horários'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.room),
-              title: const Text('Salas Disponíveis'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.account_circle),
-              title: const Text('Perfil'),
-              onTap: () {},
-            ),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Row(
               children: [
                 Expanded(
@@ -229,41 +241,68 @@ class _ProfessorPageState extends State<ProfessorPage> {
                     decoration: const InputDecoration(
                       hintText: 'Pesquisar...',
                       prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+                      border: InputBorder.none,
                     ),
                     onChanged: (val) => setState(() => pesquisa = val),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  onPressed: _abrirFiltro,
+                const SizedBox(width: 10),
+            ElevatedButton.icon(
+              onPressed: _abrirFiltro,
+              icon: const Icon(Icons.filter_list),
+              label: const Text('Filtro'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
+              ),
+            ),
               ],
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: ensalamentosFiltrados.length,
-              itemBuilder: (context, index) {
-                final e = ensalamentosFiltrados[index];
-                final sala = salas.firstWhere((s) => s['id'] == e['sala_id'], orElse: () => {'sala': 'Desconhecida', 'bloco': '-'});
-                final curso1 = cursos.firstWhere((c) => c['id'] == e['primeiro_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
-                final curso2 = cursos.firstWhere((c) => c['id'] == e['segundo_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: ensalamentosFiltrados.length,
+            itemBuilder: (context, index) {
+              final e = ensalamentosFiltrados[index];
+              final sala = salas.firstWhere((s) => s['id'] == e['sala_id'], orElse: () => {'sala': 'Desconhecida', 'bloco': '-'});
+              final curso1 = cursos.firstWhere((c) => c['id'] == e['primeiro_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
+              final curso2 = cursos.firstWhere((c) => c['id'] == e['segundo_horario'], orElse: () => {'curso': 'Desconhecido', 'periodo': '', 'semestre': ''});
 
-                return Card(
-                  child: ListTile(
-                    title: Text('${e['dia_semana']} - Sala ${sala['sala']} / Bloco ${sala['bloco']}'),
-                    subtitle: Text(
-                      '1º: ${curso1['semestre']} - ${curso1['curso']} (${curso1['periodo']})\n'
-                      '2º: ${curso2['semestre']} - ${curso2['curso']} (${curso2['periodo']})',
-                    ),
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                elevation: 3,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${e['dia_semana']} - Sala ${sala['sala']} / Bloco ${sala['bloco']}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '1º: ${curso1['semestre']} - ${curso1['curso']} (${curso1['periodo']})\n'
+                        '2º: ${curso2['semestre']} - ${curso2['curso']} (${curso2['periodo']})',
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }
