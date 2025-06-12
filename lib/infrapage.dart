@@ -288,130 +288,149 @@ class _InfrapageState extends State<Infrapage> {
     );
   }
 
-  Widget _buildCard({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 4,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40, color: Colors.blue),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Página da Infraestrutura'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Deslogar',
-            onPressed: () => _logout(context),
+ Widget _buildMenuCard({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(16),
+    splashColor: Colors.blue.shade100,
+    child: Container(
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(8),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                'Menu da Infraestrutura',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
+            Icon(icon, size: 28, color: Colors.blueAccent),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+  @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      backgroundColor: Colors.blueAccent,
+      title: const Text(
+        'Página da Infraestrutura',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: const Icon(Icons.menu),
+          style: IconButton.styleFrom(foregroundColor: Colors.white),
+          onPressed: () => Scaffold.of(context).openDrawer(),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.logout),
+          tooltip: 'Deslogar',
+          style: IconButton.styleFrom(foregroundColor: Colors.white),
+          onPressed: () => _logout(context),
+        ),
+      ],
+    ),
+    drawer: Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: const [
+          DrawerHeader(
+            margin: EdgeInsets.zero,
+            decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey,
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
                 ),
-              ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.build),
-              title: const Text('Solicitações de Manutenção'),
-              onTap: () {
-                // Pode abrir modal ou página de manutenção específica
-                _abrirModalManutencao();
-                Navigator.of(context).pop();
-              },
+            child: Text(
+              'Menu da Infraestrutura',
+              style: TextStyle(color: Colors.white, fontSize: 24),
             ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Configurações'),
-              onTap: () {
-                // Configurações placeholder
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        ),
+          ),
+          ListTile(
+            leading: Icon(Icons.build),
+            title: Text('Solicitações de Manutenção'),
+          ),
+          ListTile(
+            leading: Icon(Icons.settings),
+            title: Text('Configurações'),
+          ),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: GridView.count(
-          crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          children: [
-            _buildCard(
-              icon: Icons.build,
-              label: 'Manutenção',
-              onTap: _abrirModalManutencao,
-            ),
-            _buildCard(
-              icon: Icons.meeting_room,
-              label: 'Cadastro de Salas',
-              onTap: _abrirCadastroSalaModal,
-            ),
-            _buildCard(
-              icon: Icons.settings,
-              label: 'Configurações',
-              onTap: () {
-                // Placeholder configurações
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Configurações ainda não implementadas.')),
-                );
-              },
-            ),
-            _buildCard(
-              icon: Icons.info,
-              label: 'Sobre o Sistema',
-              onTap: () {
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'Sistema de Infraestrutura',
-                  applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2025 Diogo e Rafael',
-                );
-              },
-            ),
-          ],
-        ),
+    ),
+    body: Container(
+      color: const Color(0xFFabdbe3),
+      padding: const EdgeInsets.all(12),
+      child: GridView.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.2,
+        children: [
+          _buildMenuCard(
+            icon: Icons.build,
+            label: 'Manutenção',
+            onTap: _abrirModalManutencao,
+          ),
+          _buildMenuCard(
+            icon: Icons.meeting_room,
+            label: 'Cadastro de Salas',
+            onTap: _abrirCadastroSalaModal,
+          ),
+          _buildMenuCard(
+            icon: Icons.settings,
+            label: 'Configurações',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Configurações ainda não implementadas.')),
+              );
+            },
+          ),
+          _buildMenuCard(
+            icon: Icons.info,
+            label: 'Sobre o Sistema',
+            onTap: () {
+              showAboutDialog(
+                context: context,
+                applicationName: 'Sistema de Infraestrutura',
+                applicationVersion: '1.0.0',
+                applicationLegalese: '© 2025 Ensala Pro',
+              );
+            },
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

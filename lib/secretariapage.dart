@@ -892,7 +892,7 @@ void _abrirCrudCursoModal(BuildContext context) {
     builder: (context) => AlertDialog(
       title: const Text('Cursos'),
       content: SizedBox(
-        width: 300,
+            width: 300,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -918,94 +918,145 @@ void _abrirCrudCursoModal(BuildContext context) {
 }
 
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        title: const Text('Página da Secretaria'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Deslogar',
-            onPressed: () => _logout(context),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    key: _scaffoldKey,
+    appBar: AppBar(
+      backgroundColor: Colors.blueAccent,
+      title: const Text(
+        'Página da Secretaria',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      actions: [
+        IconButton(
+          style: IconButton.styleFrom(
+            foregroundColor: Colors.white,
+          ),
+          icon: const Icon(Icons.logout),
+          onPressed: () => _logout(context),
+        ),
+      ],
+    ),
+    drawer: Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: const [
+          DrawerHeader(
+            margin: EdgeInsets.zero,
+            decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey,
+                  spreadRadius: 2,
+                  blurRadius: 6,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Text(
+              'Menu do Sistema',
+              style: TextStyle(color: Colors.white, fontSize: 24),
+            ),
+          ),
+          ListTile(
+            leading: Icon(Icons.home),
+            title: Text('Início'),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: GridView.count(
-          crossAxisCount: 3,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          children: [
-            _buildMenuCard(
-              icon: Icons.class_,
-              label: 'Cadastro Sala',
-              onTap: () => _abrirFormularioSalaModal(context),
-            ),
-            _buildMenuCard(
-              icon: Icons.person,
-              label: 'Usuários',
-              onTap: () => _abrirModalUsuarios(context),
-            ),
-            _buildMenuCard(
-              icon: Icons.school,
-              label: 'Cursos',
-              onTap: () => _abrirCrudCursoModal(context),
-            ),
-            _buildMenuCard(
-              icon: Icons.class_,
-              label: 'Ensalamento',
-              onTap: () async {
-                final cursos = await supabase.from('curso').select().execute().then((res) => res.data as List);
-                final salas = await supabase.from('sala').select().execute().then((res) => res.data as List);
+    ),
+    body: Container(
+      color: const Color(0xFFabdbe3),
+      padding: const EdgeInsets.all(12),
+      child: GridView.count(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.2,
+        children: [
+          _buildMenuCard(
+            icon: Icons.class_,
+            label: 'Cadastro Sala',
+            onTap: () => _abrirFormularioSalaModal(context),
+          ),
+          _buildMenuCard(
+            icon: Icons.person,
+            label: 'Usuários',
+            onTap: () => _abrirModalUsuarios(context),
+          ),
+          _buildMenuCard(
+            icon: Icons.school,
+            label: 'Cursos',
+            onTap: () => _abrirCrudCursoModal(context),
+          ),
+          _buildMenuCard(
+            icon: Icons.class_,
+            label: 'Ensalamento',
+            onTap: () async {
+              final cursos = await supabase.from('curso').select().execute().then((res) => res.data as List);
+              final salas = await supabase.from('sala').select().execute().then((res) => res.data as List);
 
-                _abrirFormularioEnsalamentoModal(
-                  context,
-                  cursos: cursos,
-                  salas: salas,
-                  onAtualizado: () => setState(() {}),
-                );
-              },
-            ),
-            _buildMenuCard(
-              icon: Icons.manage_search,
-              label: 'Gerenciar Ensalamento',
-              onTap: () => _abrirGerenciamentoEnsalamento(context),
+              _abrirFormularioEnsalamentoModal(
+                context,
+                cursos: cursos,
+                salas: salas,
+                onAtualizado: () => setState(() {}),
+              );
+            },
+          ),
+          _buildMenuCard(
+            icon: Icons.manage_search,
+            label: 'Gerenciar Ensalamento',
+            onTap: () => _abrirGerenciamentoEnsalamento(context),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+}
+Widget _buildMenuCard({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(16),
+    splashColor: Colors.blue.shade100,
+    child: Container(
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(8),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 28, color: Colors.blueAccent),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12),
             ),
           ],
-        )
-      ),
-    );
-  }
-
-  Widget _buildMenuCard({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        elevation: 2,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 32, color: Colors.blue),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
